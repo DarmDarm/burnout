@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>번아웃이신가요? 저도요</title>
+<style>
+:root{
+  --bg:#E8EAE6;
+  --ink:#1E2321;
+  --muted:#6B716C;
+  --line:#C9CEC6;
+  --mark:#F2D14E;
+  --leaf:#5C7A5E;
+  --paper:#F4F5F1;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171A18;--ink:#E4E7E2;--muted:#949A93;--line:#2E332F;--mark:#C9A93F;--leaf:#7FA37F;--paper:#1E221F;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171A18;--ink:#E4E7E2;--muted:#949A93;--line:#2E332F;--mark:#C9A93F;--leaf:#7FA37F;--paper:#1E221F;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Pretendard","Pretendard Variable","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  font-size:17px;line-height:1.75;letter-spacing:-0.01em;word-break:keep-all;
+}
+main{max-width:34rem;margin:0 auto;padding:0 1.3rem 5rem}
+section{padding:3.4rem 0;border-top:1px solid var(--line)}
+section:first-of-type{border-top:0}
+h1{font-size:clamp(2.1rem,9vw,3.1rem);line-height:1.25;font-weight:800;margin:0;letter-spacing:-0.035em}
+h2{font-size:1.25rem;font-weight:700;margin:0 0 .5rem;letter-spacing:-0.02em}
+p{margin:0 0 1rem}
+.dim{color:var(--muted)}
+.small{font-size:.92rem}
+.mark{background:linear-gradient(transparent 58%,var(--mark) 58%,var(--mark) 94%,transparent 94%);padding:0 .1em}
+button{
+  font:inherit;color:var(--ink);background:none;border:1px solid var(--ink);
+  border-radius:2px;padding:.55rem 1.05rem;cursor:pointer;transition:background .15s ease,color .15s ease;
+}
+button:hover{background:var(--ink);color:var(--bg)}
+button:focus-visible{outline:2px solid var(--leaf);outline-offset:3px}
+button:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+
+/* gate screens */
+#gate{
+  min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:2rem 1.3rem;text-align:center;
+}
+.gate-step{display:none;max-width:26rem}
+.gate-step.active{display:block}
+.gate-title{font-size:clamp(1.6rem,7vw,2.1rem);font-weight:800;letter-spacing:-0.03em;line-height:1.4;margin-bottom:1.8rem}
+.gate-row{display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap}
+.gate-row button{padding:.85rem 1.5rem;font-size:1.02rem}
+.gate-sub{color:var(--muted);font-size:.92rem;margin-top:1.4rem}
+
+/* main content hidden until gate passed */
+#app{display:none}
+
+/* top control bar */
+.ctrlbar{
+  max-width:34rem;margin:0 auto;padding:1rem 1.3rem 0;
+  display:flex;justify-content:flex-end;gap:.5rem;
+}
+.ctrlbar button{
+  padding:.3rem .65rem;font-size:.8rem;border-color:var(--line);color:var(--muted);
+}
+.ctrlbar button:hover{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* hero */
+.hero{padding-top:2.4rem}
+.hero .reply{font-size:clamp(2.1rem,9vw,3.1rem);font-weight:800;letter-spacing:-0.035em;line-height:1.25;color:var(--muted)}
+.hero p{margin-top:1.6rem;max-width:26rem}
+
+/* breathing */
+.breath-stage{height:190px;display:flex;align-items:center;justify-content:center;position:relative;margin:1.4rem 0 .4rem}
+.blob{width:78px;height:78px;border-radius:50%;background:var(--leaf);opacity:.22;transform:scale(1)}
+.blob.go{animation:breathe 11s ease-in-out infinite}
+@keyframes breathe{0%{transform:scale(1);opacity:.2}36%{transform:scale(2.15);opacity:.42}50%{transform:scale(2.15);opacity:.42}100%{transform:scale(1);opacity:.2}}
+.breath-word{position:absolute;font-size:1rem;color:var(--muted);text-align:center;padding:0 1rem}
+@media (prefers-reduced-motion:reduce){.blob.go{animation:none}}
+
+/* prescription */
+.slip{background:var(--paper);border:1px solid var(--line);padding:1.5rem 1.4rem 1.6rem;position:relative;margin-bottom:1.1rem}
+.slip::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:repeating-linear-gradient(to right,var(--line) 0 6px,transparent 6px 12px)}
+.slip .label{font-size:.82rem;color:var(--muted);margin-bottom:.5rem}
+.slip .dose{font-size:1.32rem;font-weight:700;line-height:1.5;letter-spacing:-0.02em}
+.slip .time{margin-top:.7rem;font-size:.88rem;color:var(--muted)}
+
+/* crumple */
+.note{width:100%;min-height:110px;resize:vertical;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:2px;padding:.9rem 1rem;font:inherit;font-size:1rem;line-height:1.7}
+.note:focus{outline:2px solid var(--leaf);outline-offset:1px}
+.crumpling{animation:crumple .9s cubic-bezier(.4,0,.6,1) forwards;transform-origin:50% 60%}
+@keyframes crumple{0%{transform:scale(1) rotate(0);filter:blur(0);opacity:1}45%{transform:scale(.42) rotate(-16deg);filter:blur(1px);opacity:.9}100%{transform:scale(.06) rotate(38deg) translate(120px,180px);opacity:0}}
+.thrown{margin-top:.9rem;color:var(--muted);font-size:.95rem;min-height:1.6rem}
+
+/* checklist */
+ul.bar{list-style:none;padding:0;margin:.8rem 0 1.2rem}
+ul.bar li{margin:0 0 .15rem}
+ul.bar label{display:flex;gap:.7rem;align-items:flex-start;padding:.45rem .2rem;cursor:pointer}
+ul.bar input{appearance:none;width:1.1rem;height:1.1rem;flex:0 0 auto;margin-top:.35rem;border:1px solid var(--ink);border-radius:2px;background:none;cursor:pointer}
+ul.bar input:checked{background:var(--mark);border-color:var(--mark)}
+ul.bar input:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
+ul.bar input:checked + span{color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px}
+.tally{font-size:.95rem;color:var(--muted);min-height:1.6rem}
+
+footer{padding:3.4rem 0 0;border-top:1px solid var(--line);color:var(--muted)}
+footer .last{color:var(--ink);font-size:1.15rem;font-weight:700;line-height:1.7;letter-spacing:-0.02em}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-step active" id="step-lang">
+    <div class="gate-title">번아웃이신가요? 저도요.<br>Burned out? Same.</div>
+    <div class="gate-row">
+      <button data-lang="ko">한국어</button>
+      <button data-lang="en">English</button>
+    </div>
+  </div>
+  <div class="gate-step" id="step-loc">
+    <div class="gate-title" id="locTitle"></div>
+    <div class="gate-row">
+      <button id="locOut"></button>
+      <button id="locIn"></button>
+    </div>
+    <div class="gate-sub" id="locSub"></div>
+  </div>
+</div>
+
+<div class="ctrlbar" id="app">
+  <button id="resetBtn"></button>
+</div>
+
+<main id="app2" style="display:none">
+
+  <section class="hero">
+    <h1 id="t-h1"></h1>
+    <div class="reply" id="t-reply"></div>
+    <p id="t-intro"></p>
+    <p class="small dim" id="t-introsub"></p>
+  </section>
+
+  <section>
+    <h2 id="t-breathH"></h2>
+    <p class="dim small" id="t-breathSub"></p>
+    <div class="breath-stage">
+      <div class="blob" id="blob"></div>
+      <div class="breath-word" id="breathWord"></div>
+    </div>
+    <div class="row">
+      <button id="breathBtn"></button>
+      <span class="small dim" id="breathCount"></span>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="t-doseH"></h2>
+    <p class="dim small" id="t-doseSub"></p>
+    <div class="slip">
+      <div class="label" id="t-doseLabel"></div>
+      <div class="dose" id="dose"></div>
+      <div class="time" id="doseTime"></div>
+    </div>
+    <div class="row">
+      <button id="doseBtn"></button>
+      <button id="doseAgain" disabled></button>
+    </div>
+  </section>
+
+  <section>
+    <h2 id="t-crumpleH"></h2>
+    <p class="dim small" id="t-crumpleSub"></p>
+    <textarea class="note" id="note"></textarea>
+    <div class="row" style="margin-top:.8rem">
+      <button id="crumpleBtn"></button>
+    </div>
+    <div class="thrown" id="thrown"></div>
+  </section>
+
+  <section>
+    <h2 id="t-barH"></h2>
+    <p class="dim small" id="t-barSub"></p>
+    <ul class="bar" id="bar">
+      <li><label><input type="checkbox" data-k="0"><span data-t="c0"></span></label></li>
+      <li><label><input type="checkbox" data-k="1"><span data-t="c1"></span></label></li>
+      <li><label><input type="checkbox" data-k="2"><span data-t="c2"></span></label></li>
+      <li><label><input type="checkbox" data-k="3"><span data-t="c3"></span></label></li>
+      <li><label><input type="checkbox" data-k="4"><span data-t="c4"></span></label></li>
+      <li><label><input type="checkbox" data-k="5"><span data-t="c5"></span></label></li>
+      <li><label><input type="checkbox" data-k="6"><span data-t="c6"></span></label></li>
+      <li><label><input type="checkbox" data-k="7"><span data-t="c7"></span></label></li>
+      <li><label><input type="checkbox" data-k="8"><span data-t="c8"></span></label></li>
+      <li><label><input type="checkbox" data-k="9"><span data-t="c9"></span></label></li>
+    </ul>
+    <div class="tally" id="tally"></div>
+  </section>
+
+  <footer>
+    <p class="last" id="t-foot1"></p>
+    <p class="small" id="t-foot2"></p>
+    <p class="small" id="t-foot3"></p>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+var I18N = {
+  ko:{
+    locTitle:"지금, 밖으로 나가고 싶으세요?\n안에 머무르고 싶으세요?",
+    locOut:"나가고 싶어요",
+    locIn:"안에 있을래요",
+    locSub:"둘 다 할 수 있으면 편한 쪽으로 고르시면 됩니다.",
+    reset:"다시 고르기",
+    h1:"번아웃이신가요?",
+    reply:"저도요.",
+    intro:"문제없습니다. 여기서 뭘 해결하진 못하고요, 대신 5분 정도 같이 있어봅시다.",
+    introsub_in:"밖에 나가서 뛰라는 얘기는 없습니다. 지금 앉은 자리에서 할 수 있는 것만 있어요.",
+    introsub_out:"멀리 갈 필요는 없습니다. 가볍게 나갔다 오는 것들만 있어요.",
+    breathH:"먼저, 숨 한 번",
+    breathSub:"사실 아까부터 숨을 좀 얕게 쉬고 계셨을 겁니다. 3번만 같이 쉬어요.",
+    breathStart:"숨 쉬기 시작",
+    breathStop:"그만할래요",
+    breathAgain:"한 번 더",
+    breathRestart:"다시 시작",
+    breathReady:"준비되면 눌러주세요",
+    breathIn:"들이쉬고…",
+    breathHold:"잠깐 멈추고",
+    breathOut:"천천히 내쉬고",
+    breathDone:"수고하셨습니다. 아까보단 낫죠, 조금은.",
+    doseH:"오늘의 처방전",
+    doseSub_in:"전부 2분 안에 끝나고, 아무도 마주치지 않아도 되는 것들입니다.",
+    doseSub_out:"멀리 안 가도 되고, 오래 안 걸리는 것들로만 골랐습니다.",
+    doseLabel:"처방 1건 · 용법: 지금 즉시 1회",
+    dosePlaceholder:"버튼을 누르면 하나 나옵니다.",
+    doseTimePrefix:"소요시간: ",
+    doseTimePlaceholder:"—",
+    doseBtn:"처방 받기",
+    doseAgain:"이건 좀… 다른 거",
+    doseAgain2:"다른 처방 받기",
+    crumpleH:"여기에 대고 욕하기",
+    crumpleSub:"오늘 제일 짜증났던 거, 아무한테도 못 한 말. 아무 데도 저장되지 않습니다. 구겨서 버릴 거거든요.",
+    notePlaceholder:"예: 그 메일 보낸 사람 진짜…",
+    crumpleBtn:"구겨서 버리기",
+    crumpleEmpty:"빈 종이는 구길 맛이 안 납니다. 한 줄만 써보세요.",
+    thrown:["버렸습니다. 쓰레기통은 제가 비울게요.","사라졌습니다. 아무도 못 봤어요.","처리 완료. 다음 것도 있으면 마저 쓰세요.","없던 일이 되진 않지만, 일단 종이에선 없어졌습니다."],
+    barH:"오늘의 기준 낮추기",
+    barSub:"번아웃일 땐 기준이 문제입니다. 오늘은 이 정도면 충분한 걸로 합시다.",
+    c0:"일어났다", c1:"물을 한 모금이라도 마셨다", c2:"싫은 일을 하나 견뎠다", c3:"아무한테도 크게 화내지 않았다", c4:"이 페이지를 여기까지 내려왔다",
+    c5:"커피나 차를 한 잔 마셨다", c6:"씻었다 (샤워든 세수든)", c7:"누군가에게 답장을 하나라도 했다", c8:"오늘 할 일 목록에서 하나는 지웠다", c9:"오늘 하루를 버텼다, 그거면 됐다",
+    tallyStart:"하나씩 눌러보세요.",
+    tally:["0개. 그것도 오늘의 결과입니다.","하나. 시작은 했네요.","둘. 나쁘지 않은데요.","셋. 평범한 하루로 격상되었습니다.","넷. 솔직히 이 정도면 잘 산 겁니다.","다섯. 이미 충분합니다만, 계속 누르셔도 좋아요.","여섯. 오늘 좀 과하게 열심히 사시네요.","일곱. 이 사이트가 걱정할 정도입니다.","여덟. 정말 괜찮으신 거 맞아요?","아홉. 이쯤 되면 번아웃이 아니라 그냥 능력자인데요.","열 개. 완벽한 하루네요. 기준이 낮아서 그렇지만, 원래 기준은 낮추라고 있는 겁니다."],
+    foot1:"인생이 뭐 그렇게 대단한 의미가 있는 건 아닙니다.<br>그래도 무의미하게 느껴지면 슬프죠. 그건 맞아요.",
+    foot2Pre:"정답은 저도 모릅니다. 대신 오늘은 ",
+    foot2Mark:"이 정도만",
+    foot2Post:" 하고, 나머지는 내일의 나한테 떠넘깁시다. 걔도 별수 없겠지만요.",
+    foot3:"그래도 며칠, 몇 주째 계속 가라앉아 있다면 그건 쉰다고 풀리는 종류가 아닐 수 있어요. 그땐 가까운 사람이나 전문가한테 한 번 말해보는 게 좋습니다."
+  },
+  en:{
+    locTitle:"Right now, do you want to be outside?\nOr stay in?",
+    locOut:"Go outside",
+    locIn:"Stay in",
+    locSub:"If either works, just pick whichever feels easier.",
+    reset:"Change",
+    h1:"Burned out?",
+    reply:"Same.",
+    intro:"No worries. This won't fix anything, but let's just be here for about 5 minutes.",
+    introsub_in:"No advice to go run around outside. Everything here you can do right where you're sitting.",
+    introsub_out:"Nothing far. Just short trips out and back.",
+    breathH:"First, one breath",
+    breathSub:"You've probably been breathing pretty shallow for a while now. Let's do 3 rounds together.",
+    breathStart:"Start breathing",
+    breathStop:"Stop",
+    breathAgain:"Once more",
+    breathRestart:"Start over",
+    breathReady:"Press when you're ready",
+    breathIn:"Breathe in…",
+    breathHold:"Hold for a moment",
+    breathOut:"Breathe out slowly",
+    breathDone:"Nice work. A little better than before, right?",
+    doseH:"Today's prescription",
+    doseSub_in:"All of these take under a couple minutes, and you won't have to see anyone.",
+    doseSub_out:"Nothing far, nothing long. Just a short trip outside.",
+    doseLabel:"1 prescription · Take once, right now",
+    dosePlaceholder:"Press the button for one.",
+    doseTimePrefix:"Takes: ",
+    doseTimePlaceholder:"—",
+    doseBtn:"Get a prescription",
+    doseAgain:"Something else…",
+    doseAgain2:"Get another one",
+    crumpleH:"Curse at this instead",
+    crumpleSub:"Whatever annoyed you most today, the thing you couldn't say to anyone. Nothing gets saved — we're crumpling it up and throwing it away.",
+    notePlaceholder:"e.g. That person who sent the email, honestly…",
+    crumpleBtn:"Crumple it up",
+    crumpleEmpty:"Can't crumple an empty page. Write at least one line.",
+    thrown:["Thrown away. I'll empty the bin.","Gone. Nobody saw it.","Done. Write another if you've got one.","It didn't undo anything, but it's off the page now."],
+    barH:"Lower today's bar",
+    barSub:"When you're burned out, the bar is the problem. Today, this is enough.",
+    c0:"Got up", c1:"Drank at least a sip of water", c2:"Got through one thing you hated", c3:"Didn't snap at anyone", c4:"Scrolled this far down the page",
+    c5:"Had a cup of coffee or tea", c6:"Washed up (shower or just your face)", c7:"Replied to at least one message", c8:"Crossed one thing off today's list", c9:"Made it through the day, that's enough",
+    tallyStart:"Tap them one at a time.",
+    tally:["Zero. That's still today's result.","One. At least you started.","Two. Not bad at all.","Three. Upgraded to an ordinary day.","Four. Honestly, that's doing fine.","Five. That's already enough, but keep going if you want.","Six. You're overachieving today, a little.","Seven. This site is starting to worry about you.","Eight. Are you sure you're okay?","Nine. At this point that's not burnout, that's just being capable.","Ten. A perfect day — the bar's just low, but that's what it's there for."],
+    foot1:"Life doesn't have some grand, built-in meaning.<br>But it still stings when it feels meaningless. That part's real.",
+    foot2Pre:"I don't have the answer either. Let's just do ",
+    foot2Mark:"this much",
+    foot2Post:" today, and leave the rest to tomorrow's you. Not that they'll have it figured out.",
+    foot3:"If this has gone on for days or weeks though, resting alone might not be enough. It's worth talking to someone close to you, or a professional."
+  }
+};
+
+var ITEMS = [
+/* indoor */
+["창문을 10cm만 열고 바깥 공기 한 번 맞기","Crack the window 10cm and feel the air once","40초","40s","in"],
+["책상 위 물건 딱 세 개만 제자리에 두기","Put exactly three things on your desk back in place","1분","1 min","in"],
+["화면 밝기를 두 칸 내리기","Turn your screen brightness down two notches","10초","10s","in"],
+["따뜻한 물 한 컵을 앉은 채로 천천히 다 마시기","Drink a cup of warm water slowly, still sitting","2분","2 min","in"],
+["어깨를 귀까지 올렸다가 툭 떨어뜨리기, 다섯 번","Shrug your shoulders to your ears and drop them, five times","30초","30s","in"],
+["읽지 않은 알림을 확인하지 않고 그냥 전부 지우기","Clear all unread notifications without reading them","40초","40s","in"],
+["양말을 벗기. 이유는 없습니다","Take your socks off. No reason needed","15초","15s","in"],
+["오늘 안 해도 되는 일 하나를 골라서 안 하기로 정하기","Pick one thing you don't have to do today and officially skip it","1분","1 min","in"],
+["안 쓰는 탭을 절반만 닫기. 전부는 말고요","Close half your open tabs. Not all of them","1분","1 min","in"],
+["제일 좋아하는 노래 한 곡을 처음부터 끝까지 듣기","Listen to your favorite song, start to finish","3분","3 min","in"],
+["불 끄고 스탠드 하나만 켜기","Turn off the main light, keep just one lamp on","20초","20s","in"],
+["방 안에서 초록색인 물건 세 개 찾기","Find three green things in the room","40초","40s","in"],
+["답장 안 한 메시지 중 제일 만만한 것 하나만 보내기","Reply to the one unanswered message that's easiest","1분","1 min","in"],
+["냉장고 열고 아무거나 하나 꺼내 먹기. 건강은 내일부터","Open the fridge and eat whatever's closest. Health starts tomorrow","2분","2 min","in"],
+["손을 뜨거운 물에 30초 담그기","Dip your hands in hot water for 30 seconds","40초","40s","in"],
+["의자에 등을 완전히 붙이고 천장 보기","Lean all the way back and stare at the ceiling","30초","30s","in"],
+["내일 아침에 입을 옷을 지금 꺼내두기","Set out tomorrow's outfit right now","1분","1 min","in"],
+["가장 오래된 사진첩을 열어 아무 사진이나 한 장 보기","Open your oldest photo album and look at one photo","1분","1 min","in"],
+["머리를 감을지 말지 지금 결정해버리기","Decide right now whether you'll wash your hair","10초","10s","in"],
+["이불 안으로 들어가되 자진 말고 그냥 누워 있기","Get under the blanket, but don't sleep — just lie there","2분","2 min","in"],
+["하기 싫은 일 하나에 타이머 5분만 걸고, 울리면 진짜로 그만두기","Set a 5-min timer on one dreaded task, then actually stop when it rings","5분","5 min","in"],
+["키보드 위 먼지 후 불기. 생각보다 시원합니다","Blow the dust off your keyboard. More satisfying than expected","20초","20s","in"],
+["오늘 한 일 중 아무거나 하나 소리 내서 칭찬하기","Say one thing you did today out loud, and compliment it","20초","20s","in"],
+["설거지 딱 한 개만 하고 나머지는 두기","Wash exactly one dish and leave the rest","1분","1 min","in"],
+["좋아하는 향 하나(커피, 로션 등)를 30초간 맡기","Smell a favorite scent — coffee, lotion, anything — for 30 seconds","30초","30s","in"],
+["손톱 하나만 다듬기","Trim just one fingernail","30초","30s","in"],
+["오늘 처음으로 거울을 제대로 보기","Actually look in the mirror for the first time today","20초","20s","in"],
+["책장에서 아무 책이나 뽑아 한 문장만 읽기","Pull a random book off the shelf and read one sentence","30초","30s","in"],
+["베개를 뒤집어 시원한 면으로 두기","Flip your pillow to the cool side","10초","10s","in"],
+["핸드폰을 다른 방에 5분간 두고 오기","Leave your phone in another room for 5 minutes","5분","5 min","in"],
+["좋아하는 컵에 아무거나 따라 마시기","Pour anything into your favorite cup and drink it","1분","1 min","in"],
+["안 입는 옷 하나를 골라 버릴 상자에 넣기","Pick one thing you never wear and put it in a give-away box","1분","1 min","in"],
+["눈을 감고 지금 들리는 소리 세 가지 세어보기","Close your eyes and count three sounds you can hear","40초","40s","in"],
+["손등에 로션이나 크림 바르기","Put hand cream on the back of your hand","20초","20s","in"],
+["창밖을 1분간 아무 생각 없이 보기","Look out the window for 1 minute, thinking nothing in particular","1분","1 min","in"],
+/* outdoor */
+["현관문 열고 바깥 공기만 한 번 들이쉬기","Open the front door and take one breath of outside air","20초","20s","out"],
+["신발 신고 건물 밖으로 나가 3분만 걷기","Put on shoes, step outside, walk for 3 minutes","3분","3 min","out"],
+["하늘 색이 오늘 무슨 색인지 확인하기","Check what color the sky is today","20초","20s","out"],
+["가장 가까운 나무나 화분까지 걸어갔다 오기","Walk to the nearest tree or plant pot and back","2분","2 min","out"],
+["편의점 가서 아무거나 하나 사기","Go to the nearest convenience store and buy anything","5분","5 min","out"],
+["벤치나 계단에 잠깐 앉아 있기","Sit on a bench or step for a minute","2분","2 min","out"],
+["지나가는 사람 옷 색깔 세 가지 세어보기","Count three colors on the clothes of people passing by","1분","1 min","out"],
+["근처 카페에 가서 원래 안 시키던 메뉴 시키기","Go to a nearby cafe and order something you'd never usually get","5분","5 min","out"],
+["발밑의 바닥 재질(보도블럭, 흙 등) 느껴보기","Notice the texture under your feet — pavement, dirt, whatever it is","30초","30s","out"],
+["바람이 부는지 안 부는지 확인해보기","Check whether there's any wind","20초","20s","out"],
+["가장 가까운 공원 입구까지만 걸어갔다 오기","Walk to the entrance of the nearest park and back","5분","5 min","out"],
+["지나가는 강아지나 고양이 있는지 찾아보기","Look for a passing dog or cat","2분","2 min","out"],
+["아무 가게 쇼윈도 하나를 구경하기","Window-shop at one random store","1분","1 min","out"],
+["계단을 한 층만 올라갔다 내려오기","Go up one flight of stairs and back down","1분","1 min","out"],
+["밖에서 5분간 아무 목적 없이 걷기","Walk outside for 5 minutes with no destination","5분","5 min","out"],
+["햇빛이 있으면 눈 감고 30초간 얼굴로 느끼기","If there's sun, close your eyes and feel it on your face for 30s","30초","30s","out"],
+["근처 자판기나 무인가게에서 음료 하나 사기","Buy a drink from the nearest vending machine or unmanned store","2분","2 min","out"],
+["우편함이나 택배함 확인하러 다녀오기","Go check the mailbox or parcel locker","2분","2 min","out"],
+["밖에서 심호흡 세 번 하기","Take three deep breaths outside","30초","30s","out"],
+["아파트/건물 단지를 한 바퀴 걷기","Walk one loop around the building or block","5분","5 min","out"],
+["새소리나 벌레 소리 들리는지 귀 기울이기","Listen for birds or insects","30초","30s","out"],
+["밖에 나가서 사진 한 장 찍기, 뭐든 상관없이","Step outside and take one photo, of anything","1분","1 min","out"],
+["주차장이나 마당을 한 바퀴 돌기","Walk one lap around the parking lot or yard","2분","2 min","out"],
+["근처 우체국이나 은행 위치를 눈으로 확인하기","Check where the nearest post office or bank is, just by eye","2분","2 min","out"],
+["가장 가까운 신호등까지 걸어갔다 오기","Walk to the nearest traffic light and back","3분","3 min","out"],
+["밖에서 스트레칭 한 동작만 하기","Do one stretch outside, just one","30초","30s","out"],
+["편의점 앞 파라솔 의자에 잠깐 앉기","Sit for a moment on a stool outside a convenience store","2분","2 min","out"],
+["오늘 처음 마주친 사람에게 속으로 인사하기","Silently greet the first stranger you pass today","10초","10s","out"],
+["구름 모양이 뭐랑 닮았는지 하나 찾아보기","Find one cloud shape that looks like something","1분","1 min","out"],
+["자전거나 킥보드가 지나가는지 세어보기","Count how many bikes or scooters pass by","2분","2 min","out"],
+["가장 가까운 쓰레기통까지 걸어가서 주머니 속 영수증 하나 버리기","Walk to the nearest trash can and toss one receipt from your pocket","2분","2 min","out"],
+["밖에서 딱 한 번 기지개 켜기","Stretch your whole body outside, just once","20초","20s","out"],
+["근처에 문 연 가게가 몇 개인지 세어보기","Count how many nearby shops are open","2분","2 min","out"],
+["동네 골목 하나를 평소와 다른 길로 걸어보기","Take one street home a different way than usual","5분","5 min","out"],
+["밖에 나가서 아무 이유 없이 3분간 서 있기","Go outside and just stand there for 3 minutes, no reason","3분","3 min","out"]
+];
+
+var lang='ko', loc='in', pool=[];
+
+function t(k){return I18N[lang][k];}
+
+function renderStatic(){
+  document.getElementById('htmlRoot').lang = lang;
+  document.getElementById('locTitle').textContent = t('locTitle');
+  document.getElementById('locOut').textContent = t('locOut');
+  document.getElementById('locIn').textContent = t('locIn');
+  document.getElementById('locSub').textContent = t('locSub');
+  document.getElementById('resetBtn').textContent = t('reset');
+  document.getElementById('t-h1').textContent = t('h1');
+  document.getElementById('t-reply').textContent = t('reply');
+  document.getElementById('t-intro').textContent = t('intro');
+  document.getElementById('t-introsub').textContent = loc==='out' ? t('introsub_out') : t('introsub_in');
+  document.getElementById('t-breathH').textContent = t('breathH');
+  document.getElementById('t-breathSub').textContent = t('breathSub');
+  document.getElementById('breathBtn').textContent = t('breathStart');
+  document.getElementById('breathWord').textContent = t('breathReady');
+  document.getElementById('breathCount').textContent = '';
+  document.getElementById('t-doseH').textContent = t('doseH');
+  document.getElementById('t-doseSub').textContent = loc==='out' ? t('doseSub_out') : t('doseSub_in');
+  document.getElementById('t-doseLabel').textContent = t('doseLabel');
+  document.getElementById('dose').textContent = t('dosePlaceholder');
+  document.getElementById('doseTime').textContent = t('doseTimePrefix') + t('doseTimePlaceholder');
+  document.getElementById('doseBtn').textContent = t('doseBtn');
+  document.getElementById('doseAgain').textContent = t('doseAgain');
+  document.getElementById('doseAgain').disabled = true;
+  document.getElementById('t-crumpleH').textContent = t('crumpleH');
+  document.getElementById('t-crumpleSub').textContent = t('crumpleSub');
+  document.getElementById('note').placeholder = t('notePlaceholder');
+  document.getElementById('note').value='';
+  document.getElementById('crumpleBtn').textContent = t('crumpleBtn');
+  document.getElementById('thrown').textContent = '';
+  document.getElementById('t-barH').textContent = t('barH');
+  document.getElementById('t-barSub').textContent = t('barSub');
+  ['c0','c1','c2','c3','c4','c5','c6','c7','c8','c9'].forEach(function(k){
+    document.querySelector('[data-t="'+k+'"]').textContent = t(k);
+  });
+  document.getElementById('tally').textContent = t('tallyStart');
+  document.getElementById('t-foot1').innerHTML = t('foot1');
+  document.getElementById('t-foot2').innerHTML = t('foot2Pre') + '<span class="mark">' + t('foot2Mark') + '</span>' + t('foot2Post');
+  document.getElementById('t-foot3').textContent = t('foot3');
+  pool = [];
+  resetBreath();
+}
+
+/* gate */
+document.querySelectorAll('[data-lang]').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    lang = btn.getAttribute('data-lang');
+    document.getElementById('step-lang').classList.remove('active');
+    document.getElementById('step-loc').classList.add('active');
+    document.getElementById('locTitle').textContent = t('locTitle');
+    document.getElementById('locOut').textContent = t('locOut');
+    document.getElementById('locIn').textContent = t('locIn');
+    document.getElementById('locSub').textContent = t('locSub');
+  });
+});
+function enterApp(){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('app2').style.display='block';
+  renderStatic();
+}
+document.getElementById('locOut').addEventListener('click',function(){loc='out';enterApp();});
+document.getElementById('locIn').addEventListener('click',function(){loc='in';enterApp();});
+document.getElementById('resetBtn').addEventListener('click',function(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('app2').style.display='none';
+  document.getElementById('gate').style.display='flex';
+  document.getElementById('step-loc').classList.remove('active');
+  document.getElementById('step-lang').classList.add('active');
+});
+
+/* breathing */
+var blob,word,bBtn,bCount,running=false,cycle=0,timers=[];
+function clearT(){timers.forEach(clearTimeout);timers=[];}
+function runCycle(){
+  if(cycle>=3){stopBreath(true);return;}
+  word.textContent=t('breathIn');
+  timers.push(setTimeout(function(){word.textContent=t('breathHold');},4000));
+  timers.push(setTimeout(function(){word.textContent=t('breathOut');},5500));
+  timers.push(setTimeout(function(){cycle++;bCount.textContent=cycle+' / 3';runCycle();},11000));
+}
+function stopBreath(done){
+  running=false;clearT();blob.classList.remove('go');
+  bBtn.textContent = done ? t('breathAgain') : t('breathRestart');
+  word.textContent = done ? t('breathDone') : t('breathReady');
+  cycle=0;
+}
+function resetBreath(){
+  blob=document.getElementById('blob');word=document.getElementById('breathWord');
+  bBtn=document.getElementById('breathBtn');bCount=document.getElementById('breathCount');
+  running=false;cycle=0;clearT();blob.classList.remove('go');
+}
+document.getElementById('breathBtn').addEventListener('click',function(){
+  if(running){stopBreath(false);return;}
+  running=true;cycle=0;bCount.textContent='0 / 3';
+  blob.classList.add('go');bBtn.textContent=t('breathStop');runCycle();
+});
+
+/* prescription */
+var dose=document.getElementById('dose'),dTime=document.getElementById('doseTime'),
+    dBtn=document.getElementById('doseBtn'),dAgain=document.getElementById('doseAgain');
+function pick(){
+  var filtered = ITEMS.filter(function(it){return it[4]===loc;});
+  if(!pool.length){pool=filtered.slice();}
+  var i=Math.floor(Math.random()*pool.length),d=pool.splice(i,1)[0];
+  dose.textContent = lang==='ko' ? d[0] : d[1];
+  dTime.textContent = t('doseTimePrefix') + (lang==='ko' ? d[2] : d[3]);
+  dBtn.textContent=t('doseAgain2');dAgain.disabled=false;dAgain.textContent=t('doseAgain');
+}
+dBtn.addEventListener('click',pick);
+dAgain.addEventListener('click',pick);
+
+/* crumple */
+var note=document.getElementById('note'),cBtn=document.getElementById('crumpleBtn'),
+    thrown=document.getElementById('thrown'),tn=0;
+cBtn.addEventListener('click',function(){
+  if(!note.value.trim()){thrown.textContent=t('crumpleEmpty');return;}
+  note.classList.add('crumpling');cBtn.disabled=true;
+  setTimeout(function(){
+    note.value='';note.classList.remove('crumpling');cBtn.disabled=false;
+    var lines=t('thrown');
+    thrown.textContent=lines[tn++%lines.length];
+  },900);
+});
+
+/* checklist */
+var bar=document.getElementById('bar'),tally=document.getElementById('tally');
+var boxes=bar.querySelectorAll('input');
+function save(){
+  try{
+    var v=[];boxes.forEach(function(b){v.push(b.checked?1:0)});
+    localStorage.setItem('burnout-bar',JSON.stringify({d:new Date().toDateString(),v:v}));
+  }catch(e){}
+}
+function updateTally(){
+  var c=0;boxes.forEach(function(b){if(b.checked)c++});
+  tally.textContent = c===0 ? t('tallyStart') : t('tally')[c];
+}
+boxes.forEach(function(b){b.addEventListener('change',function(){updateTally();save();})});
+function loadSaved(){
+  try{
+    var raw=localStorage.getItem('burnout-bar');
+    if(raw){
+      var s=JSON.parse(raw);
+      if(s&&s.d===new Date().toDateString()&&s.v){
+        boxes.forEach(function(b,i){b.checked=!!s.v[i]});
+        updateTally();
+      }
+    }
+  }catch(e){}
+}
+document.getElementById('locOut').addEventListener('click',loadSaved);
+document.getElementById('locIn').addEventListener('click',loadSaved);
+})();
+</script>
+</body>
+</html>
